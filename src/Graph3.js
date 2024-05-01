@@ -6,77 +6,75 @@ class Graph3 extends Component {
     super(props);
     this.state = {};
   }
+
   componentDidMount() {
-    //console.log("componentDidMount (data is): ", this.props.data1);
-    this.setState({ x_scale: 10 });
+    this.updateChart();
   }
+
   componentDidUpdate() {
-    // set the dimensions and margins of the graph
-    var margin = { top: 10, right: 10, bottom: 30, left: 20 },
-      w = 1300 - margin.left - margin.right,
-      h = 250 - margin.top - margin.bottom;
-  
-    var data = this.props.data3;
-    var temp_data = d3.flatRollup(
-      data,
-      (d) => d.length,
-      (d) => d.day
+    this.updateChart();
+  }
+
+  updateChart() {
+    const margin = { top: 10, right: 10, bottom: 30, left: 20 };
+    const width = 1300 - margin.left - margin.right;
+    const height = 250 - margin.top - margin.bottom;
+
+    const data = this.props.data3;
+    const tempData = Array.from(
+      d3.rollup(
+        data,
+        (d) => d.length,
+        (d) => d.day
+      ),
+      ([day, count]) => ({ day, count })
     );
-    console.log(temp_data); // Check the format of the data in the console
-  
-    var container = d3
-      .select(".child3_svg")
-      .attr("width", w + margin.left + margin.right)
-      .attr("height", h + margin.top + margin.bottom)
-      .select(".g_3")
+
+    const svg = d3.select(".child3_svg");
+
+    svg.attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.top + margin.bottom);
+
+    const container = svg.select(".g_3")
       .attr("transform", `translate(${margin.left}, ${margin.top})`);
-  
+
     // X axis
-    var x_data = temp_data.map((item) => item[0]);
-    var x_scale = d3
-      .scaleBand()
-      .domain(x_data)
-      .range([margin.left, w])
+    const xData = tempData.map((item) => item.day);
+    const xScale = d3.scaleBand()
+      .domain(xData)
+      .range([0, width])
       .padding(0.2);
-  
-    container
-      .selectAll(".x_axis_g")
+
+    container.selectAll(".x_axis_g")
       .data([0])
       .join("g")
       .attr("class", "x_axis_g")
-      .attr("transform", `translate(0, ${h})`)
-      .call(d3.axisBottom(x_scale));
-  
-    // Add Y axis
-    var y_data = temp_data.map((item) => item[1]);
-    var y_scale = d3
-      .scaleLinear()
-      .domain([0, d3.max(y_data)])
-      .range([h, 0]);
-  
-    container
-      .selectAll(".y_axis_g")
+      .attr("transform", `translate(0, ${height})`)
+      .call(d3.axisBottom(xScale));
+
+    // Y axis
+    const yData = tempData.map((item) => item.count);
+    const yMax = d3.max(yData);
+    const yScale = d3.scaleLinear()
+      .domain([0, yMax])
+      .range([height, 0]);
+
+    container.selectAll(".y_axis_g")
       .data([0])
       .join("g")
       .attr("class", "y_axis_g")
-      .attr("transform", `translate(${margin.left},0)`)
-      .call(d3.axisLeft(y_scale));
-  
-    container
-      .selectAll("circle") // Use circles instead of rectangles
-      .data(temp_data)
-      .enter()
-      .append("circle")
-      .attr("cx", function (d) {
-        return x_scale(d[0]) + x_scale.bandwidth() / 2; // Center the circle on the x-axis
-      })
-      .attr("cy", function (d) {
-        return y_scale(d[1]);
-      })
-      .attr("r", 3) // Set the radius of the circle
-      .style("fill", "#69b3a2"); // Set the color of the circle
+      .call(d3.axisLeft(yScale));
+
+    // Circles
+    container.selectAll("circle")
+      .data(tempData)
+      .join("circle")
+      .attr("cx", (d) => xScale(d.day) + xScale.bandwidth() / 2)
+      .attr("cy", (d) => yScale(d.count))
+      .attr("r", 3)
+      .style("fill", "#69b3a2");
   }
-  
+
   render() {
     return (
       <svg className="child3_svg">
@@ -85,4 +83,5 @@ class Graph3 extends Component {
     );
   }
 }
+
 export default Graph3;
